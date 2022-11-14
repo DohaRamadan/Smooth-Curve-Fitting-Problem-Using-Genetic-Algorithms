@@ -18,7 +18,7 @@ vector<pair<int, int>> points;
 
 vector<Individual> InitializePopulation(){
     vector<Individual> newGeneration;
-    while(newGeneration.size() < POP_SIZE){
+    /*while(newGeneration.size() < POP_SIZE){
         Individual v;
         v.coefficients.resize(D + 1);
         for (int i = 0; i < D+1; i++)
@@ -28,10 +28,39 @@ vector<Individual> InitializePopulation(){
             v.coefficients[i] = coff;
         }
         newGeneration.push_back(v);
-    }
+    }*/
+    Individual vect1;
+    vect1.coefficients = {1.95, 8.16, -2};
+    Individual vect2;
+    vect2.coefficients = {4.26, -7.4, -2.5};
+    Individual vect3;
+    vect3.coefficients = {3.36, -0.3, -6.2};
+    Individual vect4;
+    vect4.coefficients = {0.23, 0.12, 4.62};
+
+    newGeneration.push_back(vect1);
+    newGeneration.push_back(vect2);
+    newGeneration.push_back(vect3);
+    newGeneration.push_back(vect4);
+
     return newGeneration;
 }
 
+Individual tournamentSelection(vector<Individual> population, int k){
+    int mating_pool[k]; // Indices for the individual participating in the tournament
+    for(int i = 0; i < k; i++)
+        mating_pool[i] = 0 + (rand() % population.size()); // Randomize the indices
+    double max_score = -1; // To find the highest score among contestants
+    int max_score_index; // To find the index of the contestant with the highest score
+    for(int i = 0; i < k; i++)
+    {
+        if(max_score < population[mating_pool[i]].fitness) {
+            max_score = population[mating_pool[i]].fitness;
+            max_score_index = mating_pool[i];
+        }
+    }
+    return population[max_score_index];  // Return contestant with the highest score
+}
 
 void evaluateFitness(){
     for (int i = 0; i < POP_SIZE; i++)
@@ -65,8 +94,8 @@ Individual GA(){
 }
 
 int main(){
-    freopen("curve_fitting_input.txt", "r", stdin);
-    freopen("curve_fitting_output.txt", "w", stdout);
+    //freopen("curve_fitting_input.txt", "r", stdin);
+    //freopen("curve_fitting_output.txt", "w", stdout);
     int t;
     cin >> t;
     while(t--){
@@ -76,7 +105,11 @@ int main(){
         {
             cin >> points[i].x >> points[i].y;
         }
-        GA();
+        // GA();
+        vector<Individual> population = InitializePopulation();
+        currentGeneration = population;
+        evaluateFitness();
+        Individual max = tournamentSelection(currentGeneration, 3);
     }
 
 

@@ -11,15 +11,19 @@ struct Individual{
     double fitness = 0.0;
 };
 
-int pointsNum, D, t;
+int pointsNum, D, t, k;
 float b = 2;
 const int POP_SIZE = 4, MAX_GENERATION = 1000, PM = 0.1, PC = 0.6;
 vector<Individual> currentGeneration, offsprings;
 vector<pair<int, int>> points;
 
+bool sortByFitness(Individual& a, Individual& b){
+    return a.fitness > b.fitness;
+}
+
 vector<Individual> InitializePopulation(){
     vector<Individual> newGeneration;
-    /*while(newGeneration.size() < POP_SIZE){
+    /*while(newGeneration.size() <= POP_SIZE){
         Individual v;
         v.coefficients.resize(D + 1);
         for (int i = 0; i < D+1; i++)
@@ -47,20 +51,20 @@ vector<Individual> InitializePopulation(){
     return newGeneration;
 }
 
-Individual tournamentSelection(vector<Individual> population, int k){
-    int mating_pool[k]; // Indices for the individual participating in the tournament
+Individual tournamentSelection(){
+    int *mating_pool = new int[k]; // Indices for the individual participating in the tournament
     for(int i = 0; i < k; i++)
-        mating_pool[i] = 0 + (rand() % population.size()); // Randomize the indices
+        mating_pool[i] = 0 + (rand() % currentGeneration.size()); // Randomize the indices
     double max_score = -1; // To find the highest score among contestants
     int max_score_index; // To find the index of the contestant with the highest score
     for(int i = 0; i < k; i++)
     {
-        if(max_score < population[mating_pool[i]].fitness) {
-            max_score = population[mating_pool[i]].fitness;
+        if(max_score < currentGeneration[mating_pool[i]].fitness) {
+            max_score = currentGeneration[mating_pool[i]].fitness;
             max_score_index = mating_pool[i];
         }
     }
-    return population[max_score_index];  // Return contestant with the highest score
+    return currentGeneration[max_score_index];  // Return contestant with the highest score
 }
 
 void evaluateFitness(){
@@ -141,6 +145,29 @@ void Mutation(){
 
 }
 
+void Replacement(){
+    offsprings.clear();
+    int best = ceil((double)(10 / 100) * POP_SIZE);
+    std::sort(currentGeneration.begin(), currentGeneration.end(), sortByFitness);
+    for (int i = 0; i < best; i++) {
+        offsprings.push_back(currentGeneration[i]);
+    }
+    while(offsprings.size() <= POP_SIZE){
+        Individual parent1 = tournamentSelection();
+        Individual parent2 = tournamentSelection();
+        float r = (float)rand() / (float)RAND_MAX;
+        if(r <= PC){
+            // perform crossover
+            pair<Individual, Individual> springs = crossover(parent1, parent2);
+            offsprings.push_back(springs.first);
+            offsprings.push_back(springs.second);
+        }else{
+            offsprings.push_back(parent1);
+            offsprings.push_back(parent2);
+        }
+    }
+}
+
 Individual GA(){
     currentGeneration.clear();
     currentGeneration.resize(POP_SIZE);
@@ -149,12 +176,15 @@ Individual GA(){
     {
         t = i;
         evaluateFitness();
+        Replacement();
+        Mutation();
+        currentGeneration = offsprings;
     }
 }
 
 int main(){
-    //freopen("curve_fitting_input.txt", "r", stdin);
-    //freopen("curve_fitting_output.txt", "w", stdout);
+    freopen("curve_fitting_input.txt", "r", stdin);
+    freopen("curve_fitting_output.txt", "w", stdout);
     int t;
     cin >> t;
     while(t--){
@@ -168,7 +198,7 @@ int main(){
         vector<Individual> population = InitializePopulation();
         currentGeneration = population;
         evaluateFitness();
-        Individual max = tournamentSelection(currentGeneration, 3);
+        Individual max = tournamentSelection();
     }
 
 

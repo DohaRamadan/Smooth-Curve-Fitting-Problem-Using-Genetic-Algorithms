@@ -1,6 +1,7 @@
 #include <iostream>
 #include <vector>
 #include <cmath>
+#include <algorithm>
 #define x first
 #define y second
 using namespace std;
@@ -10,8 +11,9 @@ struct Individual{
     double fitness = 0.0;
 };
 
-int pointsNum, D;
-const int POP_SIZE = 4, MAX_GENERATION = 1000;
+int pointsNum, D, t;
+float b = 2;
+const int POP_SIZE = 4, MAX_GENERATION = 1000, PM = 0.1, PC = 0.6;
 vector<Individual> currentGeneration, offsprings;
 vector<pair<int, int>> points;
 
@@ -99,7 +101,7 @@ pair<Individual, Individual> crossover(Individual parent1, Individual parent2){
         child1.coefficients[i] = parent2.coefficients[i];
         child2.coefficients[i] = parent1.coefficients[i];
     }
-    
+
     for (int i = max(r1, r2) + 1; i < D + 1; i++)
     {
         child1.coefficients[i] = parent1.coefficients[i];
@@ -109,6 +111,35 @@ pair<Individual, Individual> crossover(Individual parent1, Individual parent2){
     return {child1, child2};
 }
 
+void Mutation(){
+    for (int i = 0; i < POP_SIZE; ++i) {
+        float mn = *min_element(offsprings[i].coefficients.begin(), offsprings[i].coefficients.end());
+        float mx = *max_element(offsprings[i].coefficients.begin(), offsprings[i].coefficients.end());
+        for (int j = 0; j < D + 1; ++j) {
+            float r = (float)rand() / (float)RAND_MAX;
+            if(r <= PM){
+                float dl = offsprings[i].coefficients[j] - mn;
+                float du = mx - offsprings[i].coefficients[j];
+                float xi = offsprings[i].coefficients[j];
+                float r1 = (float)rand() / (float)RAND_MAX;
+                float y;
+                if(r1 <= 0.5){
+                    y = dl;
+                }else{
+                    y = du;
+                }
+                float p = pow (1 - t / MAX_GENERATION, b);
+                float d = y * (1 - pow(r, p));
+                if(y == dl){
+                    offsprings[i].coefficients[j] = xi - d;
+                }else if(y == du){
+                    offsprings[i].coefficients[j] = xi + d;
+                }
+            }
+        }
+    }
+
+}
 
 Individual GA(){
     currentGeneration.clear();
@@ -116,6 +147,7 @@ Individual GA(){
     currentGeneration = InitializePopulation();
     for (int i = 0; i < MAX_GENERATION; i++)
     {
+        t = i;
         evaluateFitness();
     }
 }
@@ -138,4 +170,6 @@ int main(){
         evaluateFitness();
         Individual max = tournamentSelection(currentGeneration, 3);
     }
+
+
 }

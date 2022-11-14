@@ -8,7 +8,6 @@ using namespace std;
 struct Individual{
     vector<float> coefficients;
     double fitness = 0.0;
-
 };
 
 int pointsNum, D;
@@ -83,10 +82,38 @@ void evaluateFitness(){
 
 }
 
+pair<Individual, Individual> crossover(Individual parent1, Individual parent2){
+    int r1 = 0 + (rand() % (D - 1));
+    int r2 = r1+1 + (rand() % (D - 1));
+    Individual child1, child2;
+    child1.coefficients.resize(D+1);
+    child2.coefficients.resize(D+1);
+    for (int i = 0; i <= min(r1, r2); i++)
+    {
+        child1.coefficients[i] = parent1.coefficients[i];
+        child2.coefficients[i] = parent2.coefficients[i];
+    }
+
+    for (int i = min(r1, r2)+1; i <= max(r1, r2); i++)
+    {
+        child1.coefficients[i] = parent2.coefficients[i];
+        child2.coefficients[i] = parent1.coefficients[i];
+    }
+    
+    for (int i = max(r1, r2) + 1; i < D + 1; i++)
+    {
+        child1.coefficients[i] = parent1.coefficients[i];
+        child2.coefficients[i] = parent2.coefficients[i];
+    }
+
+    return {child1, child2};
+}
+
+
 Individual GA(){
     currentGeneration.clear();
     currentGeneration.resize(POP_SIZE);
-     currentGeneration = InitializePopulation();
+    currentGeneration = InitializePopulation();
     for (int i = 0; i < MAX_GENERATION; i++)
     {
         evaluateFitness();
@@ -111,6 +138,4 @@ int main(){
         evaluateFitness();
         Individual max = tournamentSelection(currentGeneration, 3);
     }
-
-
 }

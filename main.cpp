@@ -2,8 +2,8 @@
 #include <vector>
 #include <cmath>
 #include <algorithm>
-#define x first
-#define y second
+#include <iomanip>
+
 using namespace std;
 
 struct Individual{
@@ -11,10 +11,11 @@ struct Individual{
     double fitness = 0.0;
 };
 
-int pointsNum, D, t, k;
+int pointsNum, D, t, k=2;
 float b = 2;
-const int POP_SIZE = 4, MAX_GENERATION = 1000, PM = 0.1, PC = 0.6;
-vector<Individual> currentGeneration, offsprings;
+const int POP_SIZE = 4, MAX_GENERATION = 1000;
+const float PM = 0.1, PC = 0.6;
+vector<Individual> currentGeneration, newGeneration;
 vector<pair<int, int>> points;
 
 bool sortByFitness(Individual& a, Individual& b){
@@ -22,8 +23,8 @@ bool sortByFitness(Individual& a, Individual& b){
 }
 
 vector<Individual> InitializePopulation(){
-    vector<Individual> newGeneration;
-    /*while(newGeneration.size() <= POP_SIZE){
+    vector<Individual> Generation;
+    while(Generation.size() < POP_SIZE){
         Individual v;
         v.coefficients.resize(D + 1);
         for (int i = 0; i < D+1; i++)
@@ -32,23 +33,44 @@ vector<Individual> InitializePopulation(){
             float coff = -10 + (rand() % ( 20 + 1));
             v.coefficients[i] = coff;
         }
-        newGeneration.push_back(v);
-    }*/
-    Individual vect1;
-    vect1.coefficients = {1.95, 8.16, -2};
-    Individual vect2;
-    vect2.coefficients = {4.26, -7.4, -2.5};
-    Individual vect3;
-    vect3.coefficients = {3.36, -0.3, -6.2};
-    Individual vect4;
-    vect4.coefficients = {0.23, 0.12, 4.62};
+        Generation.push_back(v);
+    }
+//    Individual vect1;
+//    vect1.coefficients = {1.95, 8.16, -2};
+//    Individual vect2;
+//    vect2.coefficients = {4.26, -7.4, -2.5};
+//    Individual vect3;
+//    vect3.coefficients = {3.36, -0.3, -6.2};
+//    Individual vect4;
+//    vect4.coefficients = {0.23, 0.12, 4.62};
+//
+//    Generation.push_back(vect1);
+//    Generation.push_back(vect2);
+//    Generation.push_back(vect3);
+//    Generation.push_back(vect4);
 
-    newGeneration.push_back(vect1);
-    newGeneration.push_back(vect2);
-    newGeneration.push_back(vect3);
-    newGeneration.push_back(vect4);
+    return Generation;
+}
 
-    return newGeneration;
+void evaluateFitness(){
+    for (int i = 0; i < POP_SIZE; i++)
+    {
+        double SE = 0.0, MSE = 0.0;
+        // J is the point (x, y)
+        for(int j=0; j<pointsNum; j++){
+            double predictedY = 0.0;
+            // K is the coeffeints [0.1, 2.5, 10.5]
+            for(int k=0; k<D+1; k++){
+                double xp = pow(points[j].first, k);
+                predictedY += (currentGeneration[i].coefficients[k] * xp);
+            }
+            double error = pow(predictedY - points[j].second, 2)  ;
+            SE += error;
+        }
+        MSE = SE / pointsNum;
+        currentGeneration[i].fitness = 1.00 / MSE ;
+    }
+
 }
 
 Individual tournamentSelection(){
@@ -66,28 +88,6 @@ Individual tournamentSelection(){
     }
     return currentGeneration[max_score_index];  // Return contestant with the highest score
 }
-
-void evaluateFitness(){
-    for (int i = 0; i < POP_SIZE; i++)
-    {
-        double SE = 0.0, MSE = 0.0;
-        // J is the point (x, y)
-        for(int j=0; j<pointsNum; j++){
-            double predictedY = 0.0;
-            // K is the coeffeints [0.1, 2.5, 10.5]
-            for(int k=0; k<D+1; k++){
-                double xp = pow(points[j].x, k);
-                predictedY += (currentGeneration[i].coefficients[k] * xp);
-            }
-            double error = pow(predictedY - points[j].y, 2)  ;
-            SE += error;
-        }
-        MSE = SE / pointsNum;
-        currentGeneration[i].fitness = 1.00 / MSE ;
-    }
-
-}
-
 pair<Individual, Individual> crossover(Individual parent1, Individual parent2){
     int r1 = 0 + (rand() % (D - 1));
     int r2 = r1+1 + (rand() % (D - 1));
@@ -116,15 +116,15 @@ pair<Individual, Individual> crossover(Individual parent1, Individual parent2){
 }
 
 void Mutation(){
-    for (int i = 0; i < POP_SIZE; ++i) {
-        float mn = *min_element(offsprings[i].coefficients.begin(), offsprings[i].coefficients.end());
-        float mx = *max_element(offsprings[i].coefficients.begin(), offsprings[i].coefficients.end());
+    for (int i = 0; i < newGeneration.size(); ++i) {
+        float mn = *min_element(newGeneration[i].coefficients.begin(), newGeneration[i].coefficients.end());
+        float mx = *max_element(newGeneration[i].coefficients.begin(), newGeneration[i].coefficients.end());
         for (int j = 0; j < D + 1; ++j) {
             float r = (float)rand() / (float)RAND_MAX;
             if(r <= PM){
-                float dl = offsprings[i].coefficients[j] - mn;
-                float du = mx - offsprings[i].coefficients[j];
-                float xi = offsprings[i].coefficients[j];
+                float dl = newGeneration[i].coefficients[j] - mn;
+                float du = mx - newGeneration[i].coefficients[j];
+                float xi = newGeneration[i].coefficients[j];
                 float r1 = (float)rand() / (float)RAND_MAX;
                 float y;
                 if(r1 <= 0.5){
@@ -132,12 +132,13 @@ void Mutation(){
                 }else{
                     y = du;
                 }
+                float r2 = (float)rand() / (float)RAND_MAX;
                 float p = pow (1 - t / MAX_GENERATION, b);
-                float d = y * (1 - pow(r, p));
+                float d = y * (1 - pow(r2, p));
                 if(y == dl){
-                    offsprings[i].coefficients[j] = xi - d;
+                    newGeneration[i].coefficients[j] = xi - d;
                 }else if(y == du){
-                    offsprings[i].coefficients[j] = xi + d;
+                    newGeneration[i].coefficients[j] = xi + d;
                 }
             }
         }
@@ -146,25 +147,27 @@ void Mutation(){
 }
 
 void Replacement(){
-    offsprings.clear();
-    int best = ceil((double)(10 / 100) * POP_SIZE);
-    std::sort(currentGeneration.begin(), currentGeneration.end(), sortByFitness);
-    for (int i = 0; i < best; i++) {
-        offsprings.push_back(currentGeneration[i]);
-    }
-    while(offsprings.size() <= POP_SIZE){
+    newGeneration.clear();
+    double percent = (10.00 / 100.00);
+    int best = ceil((double)percent * POP_SIZE);
+    while(newGeneration.size() < (POP_SIZE - best)){
         Individual parent1 = tournamentSelection();
         Individual parent2 = tournamentSelection();
         float r = (float)rand() / (float)RAND_MAX;
         if(r <= PC){
             // perform crossover
             pair<Individual, Individual> springs = crossover(parent1, parent2);
-            offsprings.push_back(springs.first);
-            offsprings.push_back(springs.second);
+            newGeneration.push_back(springs.first);
+            if(newGeneration.size() < (POP_SIZE - best))  newGeneration.push_back(springs.second);
         }else{
-            offsprings.push_back(parent1);
-            offsprings.push_back(parent2);
+            newGeneration.push_back(parent1);
+            if(newGeneration.size() < (POP_SIZE - best)) newGeneration.push_back(parent2);
         }
+    }
+    Mutation();
+    std::sort(currentGeneration.begin(), currentGeneration.end(), sortByFitness);
+    for (int i = 0; i < best; i++) {
+        newGeneration.push_back(currentGeneration[i]);
     }
 }
 
@@ -177,9 +180,10 @@ Individual GA(){
         t = i;
         evaluateFitness();
         Replacement();
-        Mutation();
-        currentGeneration = offsprings;
+        currentGeneration = newGeneration;
     }
+    std::sort(currentGeneration.begin(), currentGeneration.end(), sortByFitness);
+    return currentGeneration[0];
 }
 
 int main(){
@@ -187,19 +191,25 @@ int main(){
     freopen("curve_fitting_output.txt", "w", stdout);
     int t;
     cin >> t;
-    while(t--){
+    for(int i=0; i < t; i++){
         cin >> pointsNum >> D;
         points.resize(pointsNum);
-        for (int i = 0; i < pointsNum; i++)
+        for (int j = 0; j < pointsNum; j++)
         {
-            cin >> points[i].x >> points[i].y;
+            cin >> points[j].first >> points[j].second;
         }
-        // GA();
-        vector<Individual> population = InitializePopulation();
-        currentGeneration = population;
-        evaluateFitness();
-        Individual max = tournamentSelection();
+        Individual bestIndividual = GA();
+        cout << "------- test case " << i+1 << " -------\n";
+        cout << "coefficients of the polynomial function of degree " << D << " : \n";
+        cout << "{ ";
+        for (int j = 0; j < bestIndividual.coefficients.size(); ++j) {
+            if(j == bestIndividual.coefficients.size() - 1) {
+                cout << fixed << setprecision(6) <<  bestIndividual.coefficients[j] << " }\n";
+            }else{
+                cout << fixed <<  setprecision(6) << bestIndividual.coefficients[j] << " , ";
+            }
+        }
+        cout << "Fitness: " << fixed << setprecision(6) << bestIndividual.fitness << "\n";
+        cout << "MSE: " << fixed << setprecision(6) << 1.00 / bestIndividual.fitness << "\n";
     }
-
-
 }

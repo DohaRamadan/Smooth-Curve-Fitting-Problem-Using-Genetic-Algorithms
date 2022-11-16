@@ -11,12 +11,12 @@ struct Individual{
     double fitness = 0.0;
 };
 
-int pointsNum, D, t, k=2;
-float b = 2;
-const int POP_SIZE = 4, MAX_GENERATION = 1000;
+const int POP_SIZE = 100, MAX_GENERATION = 1000;
 const float PM = 0.1, PC = 0.6;
 vector<Individual> currentGeneration, newGeneration;
-vector<pair<int, int>> points;
+vector<pair<float, float>> points;
+int pointsNum, D, currGen = 0, k=2;
+float b = 2;
 
 bool sortByFitness(Individual& a, Individual& b){
     return a.fitness > b.fitness;
@@ -35,20 +35,6 @@ vector<Individual> InitializePopulation(){
         }
         Generation.push_back(v);
     }
-//    Individual vect1;
-//    vect1.coefficients = {1.95, 8.16, -2};
-//    Individual vect2;
-//    vect2.coefficients = {4.26, -7.4, -2.5};
-//    Individual vect3;
-//    vect3.coefficients = {3.36, -0.3, -6.2};
-//    Individual vect4;
-//    vect4.coefficients = {0.23, 0.12, 4.62};
-//
-//    Generation.push_back(vect1);
-//    Generation.push_back(vect2);
-//    Generation.push_back(vect3);
-//    Generation.push_back(vect4);
-
     return Generation;
 }
 
@@ -133,7 +119,7 @@ void Mutation(){
                     y = du;
                 }
                 float r2 = (float)rand() / (float)RAND_MAX;
-                float p = pow (1 - t / MAX_GENERATION, b);
+                float p = pow (1 - currGen / MAX_GENERATION, b);
                 float d = y * (1 - pow(r2, p));
                 if(y == dl){
                     newGeneration[i].coefficients[j] = xi - d;
@@ -177,7 +163,7 @@ Individual GA(){
     currentGeneration = InitializePopulation();
     for (int i = 0; i < MAX_GENERATION; i++)
     {
-        t = i;
+        currGen = i;
         evaluateFitness();
         Replacement();
         currentGeneration = newGeneration;
@@ -189,10 +175,11 @@ Individual GA(){
 int main(){
     freopen("curve_fitting_input.txt", "r", stdin);
     freopen("curve_fitting_output.txt", "w", stdout);
-    int t;
-    cin >> t;
-    for(int i=0; i < t; i++){
+    int testcases;
+    cin >> testcases;
+    for(int i=0; i < testcases; i++){
         cin >> pointsNum >> D;
+        points.clear();
         points.resize(pointsNum);
         for (int j = 0; j < pointsNum; j++)
         {
